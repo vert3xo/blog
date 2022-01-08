@@ -5,14 +5,23 @@ import * as jwt from "jsonwebtoken";
 import { Role } from "../types/Role";
 
 export const authCheck: AuthChecker<ContextType> = ({ context }, roles) => {
-  const { token } = context;
-  if (!token) {
+  const { payload } = context;
+  if (!payload) {
     return false;
   }
+
+  const { token } = payload;
 
   try {
     const decoded = jwt.decode(token);
     if (!decoded.sub) {
+      return false;
+    }
+
+    if (
+      !(decoded as jwt.JwtPayload).exp ||
+      (decoded as jwt.JwtPayload).exp < Math.floor(new Date().getTime() / 1000)
+    ) {
       return false;
     }
 

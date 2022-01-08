@@ -1,4 +1,10 @@
+import { Request, Response } from "express";
+
 export type ContextType = {
-  token?: string;
-  roles?: string[];
+  req: Request;
+  res: Response;
+  payload?: {
+    token: string;
+    roles: string[];
+  };
 };

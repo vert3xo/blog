@@ -3,7 +3,7 @@ import "reflect-metadata";
 import { createConnection } from "typeorm";
 import { Container } from "typedi";
 import { useContainer as ormUseContainer } from "typeorm";
-import { useContainer as rcUseContainer } from "routing-controllers";
+import { Ctx, useContainer as rcUseContainer } from "routing-controllers";
 import * as bodyParser from "body-parser";
 import { createExpressServer } from "routing-controllers";
 import { ApolloServer } from "apollo-server-express";
@@ -50,8 +50,12 @@ createConnection({
               root: null,
               args: null,
               context: {
-                token: authorizationParts[1],
-                roles: [authorizationParts[0]],
+                req: action.request,
+                res: action.response,
+                payload: {
+                  token: authorizationParts[1],
+                  roles: [authorizationParts[0]],
+                },
               },
               info: null,
             },
@@ -77,20 +81,24 @@ createConnection({
         container: Container,
       }),
       context: (ctx): ContextType => {
+        const defaultRet: ContextType = { req: ctx.req, res: ctx.res };
         const { authorization } = ctx.req.headers;
         if (!authorization) {
-          return {};
+          return defaultRet;
         }
 
         const authorizationParts = (authorization as string).split(" ");
         if (!!authorizationParts[0] && !!authorizationParts[1]) {
           return {
-            token: authorizationParts[1],
-            roles: [authorizationParts[0]],
+            ...defaultRet,
+            payload: {
+              token: authorizationParts[1],
+              roles: [authorizationParts[0]],
+            },
           };
         }
 
-        return {};
+        return defaultRet;
       },
     });
     await apollo.start();
