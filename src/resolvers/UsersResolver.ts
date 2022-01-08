@@ -4,6 +4,7 @@ import {
   JsonController,
   Get,
   Post,
+  Param,
 } from "routing-controllers";
 import {
   Arg,
@@ -11,10 +12,12 @@ import {
   Query,
   Resolver,
   Authorized as GraphAuthorized,
+  Int,
 } from "type-graphql";
 import { Service } from "typedi";
 import { Repository } from "typeorm";
 import { InjectRepository } from "typeorm-typedi-extensions";
+import bcrypt from "bcrypt";
 import { Author } from "../entity/Author";
 import { User } from "../entity/User";
 import { Role } from "../types/Role";
@@ -31,13 +34,21 @@ export class UsersResolver {
 
   @Authorized([Role.Admin])
   @GraphAuthorized([Role.Admin])
-  @Query(() => [User])
+  @Query(() => [User], { nullable: true })
   @Get("/")
   users() {
     return this.userRepository.find({ relations: ["author"] });
   }
 
-  @Post("/create")
+  @Authorized([Role.Admin])
+  @GraphAuthorized([Role.Admin])
+  @Query(() => User, { nullable: true })
+  @Get("/:id")
+  user(@Arg("id", () => Int) @Param("id") id: number) {
+    return this.userRepository.findOne(id, { relations: ["author"] });
+  }
+
+  @Post("/register")
   @Mutation(() => Boolean)
   async createUser(
     @BodyParam("username") @Arg("username") username: string,
@@ -50,7 +61,7 @@ export class UsersResolver {
 
     const user = this.userRepository.create({
       username,
-      password,
+      password: bcrypt.hashSync(password, bcrypt.genSaltSync()),
     });
 
     const author = this.authorRepository.create({ name, user });

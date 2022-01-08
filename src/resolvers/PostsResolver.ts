@@ -5,10 +5,12 @@ import {
   Get,
   BodyParam,
   CurrentUser,
+  Param,
 } from "routing-controllers";
 import {
   Arg,
   Authorized as GraphAuthorized,
+  Int,
   Mutation,
   Query,
   Resolver,
@@ -16,12 +18,12 @@ import {
 import { InjectRepository } from "typeorm-typedi-extensions";
 import { Service } from "typedi";
 import { Repository } from "typeorm";
-import { Post as PostObject } from "../entity/Post";
+import { Post as PostEntity } from "../entity/Post";
 import { Author } from "../entity/Author";
 import { CurrentUser as GraphCurrentUser } from "../decorators/UserDecorator";
 import { User } from "../entity/User";
 
-@Resolver(PostObject)
+@Resolver(PostEntity)
 @JsonController("/posts")
 @Service()
 export class PostsResolver {
@@ -31,13 +33,21 @@ export class PostsResolver {
   @InjectRepository(Author)
   private readonly authorRepository: Repository<Author>;
 
-  @InjectRepository(PostObject)
-  private readonly postsRepository: Repository<PostObject>;
+  @InjectRepository(PostEntity)
+  private readonly postsRepository: Repository<PostEntity>;
 
-  @Query(() => [PostObject])
+  @Query(() => [PostEntity], { nullable: true })
   @Get("/")
   posts() {
     return this.postsRepository.find({ relations: ["authors"] });
+  }
+
+  @Query(() => PostEntity, { nullable: true })
+  @Get("/:id")
+  post(@Arg("id", () => Int) @Param("id") id: number) {
+    return this.postsRepository.findOne(id, {
+      relations: ["authors"],
+    });
   }
 
   @Authorized()
@@ -60,7 +70,7 @@ export class PostsResolver {
       return false;
     }
 
-    const author = await this.authorRepository.findOne(user.author, {
+    const author = await this.authorRepository.findOne(user.author.id, {
       relations: ["posts"],
     });
 

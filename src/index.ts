@@ -8,6 +8,7 @@ import * as bodyParser from "body-parser";
 import { createExpressServer } from "routing-controllers";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
+import { AuthorsResolver } from "./resolvers/AuthorsResolver";
 import { PostsResolver } from "./resolvers/PostsResolver";
 import { UsersResolver } from "./resolvers/UsersResolver";
 import { authCheck } from "./authorization/authCheck";
@@ -35,7 +36,7 @@ createConnection({
   .then(async (connection) => {
     // create express app
     const app = createExpressServer({
-      controllers: [PostsResolver, UsersResolver],
+      controllers: [AuthorsResolver, PostsResolver, UsersResolver],
       authorizationChecker: async (action, roles) => {
         const { authorization } = action.request.headers;
         if (!authorization) {
@@ -71,7 +72,7 @@ createConnection({
 
     const apollo = new ApolloServer({
       schema: await buildSchema({
-        resolvers: [PostsResolver, UsersResolver],
+        resolvers: [AuthorsResolver, PostsResolver, UsersResolver],
         authChecker: authCheck,
         container: Container,
       }),
