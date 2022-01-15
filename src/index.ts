@@ -14,6 +14,7 @@ import { UsersResolver } from "./resolvers/UsersResolver";
 import { authCheck } from "./authorization/authCheck";
 import { ContextType } from "./types/ContextType";
 import * as jwt from "jsonwebtoken";
+import cors from "cors";
 
 const port = process.env.PORT || 3000;
 
@@ -73,6 +74,11 @@ createConnection({
       },
     });
     app.use(bodyParser.json());
+    app.use(
+      cors({
+        origin: ["127.0.0.1:3000", "127.0.0.1:4000"],
+      })
+    );
 
     const apollo = new ApolloServer({
       schema: await buildSchema({

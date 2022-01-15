@@ -88,4 +88,13 @@ export class PostsResolver {
 
     return true;
   }
+
+  @Authorized()
+  @GraphAuthorized()
+  @Mutation(() => Boolean)
+  @Post("/delete")
+  async deletePost(@BodyParam("id") @Arg("id", () => Int) id: number) {
+    await this.postsRepository.delete({ id });
+    return true;
+  }
 }

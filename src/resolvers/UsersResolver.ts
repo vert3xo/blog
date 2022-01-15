@@ -21,11 +21,12 @@ import { Service } from "typedi";
 import { Repository } from "typeorm";
 import { InjectRepository } from "typeorm-typedi-extensions";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { Author } from "../entity/Author";
 import { User } from "../entity/User";
 import { Role } from "../types/Role";
 import { ContextType } from "../types/ContextType";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwtUtil";
+import * as jwt from "jsonwebtoken";
 
 @Resolver(User)
 @JsonController("/users")
@@ -53,6 +54,23 @@ export class UsersResolver {
     return this.userRepository.findOne(id, { relations: ["author"] });
   }
 
+  @Authorized()
+  @GraphAuthorized()
+  @Query(() => User, { nullable: true })
+  @Get("/me")
+  me(@GraphCtx() @Ctx() context: ContextType) {
+    if (!context.payload) {
+      return null;
+    }
+    const username = (jwt.decode(context.payload.token) as jwt.JwtPayload).name;
+
+    if (!username) {
+      return null;
+    }
+
+    return this.userRepository.findOne({ username }, { relations: ["author"] });
+  }
+
   @Post("/login")
   @Mutation(() => String, { nullable: true })
   async login(
@@ -69,14 +87,18 @@ export class UsersResolver {
       return null;
     }
 
-    return jwt.sign(
-      {
-        name: username,
-        sub: user.admin ? Role.Admin : Role.Regular,
-        exp: Math.floor(new Date().getTime() / 1000) + 2 * 60 * 60,
-      },
-      process.env.JWT_SECRET,
-      { algorithm: "HS256" }
+    context.res.cookie(
+      "blog_refresh_token",
+      generateRefreshToken(
+        user.username,
+        user.admin ? Role.Admin : Role.Regular
+      ),
+      { httpOnly: true }
+    );
+
+    return generateAccessToken(
+      user.username,
+      user.admin ? Role.Admin : Role.Regular
     );
   }
 

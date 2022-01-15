@@ -18,6 +18,6 @@ export class Post {
   body: string;
 
   @Field(() => [Author])
-  @ManyToMany(() => Author, (author) => author.posts)
+  @ManyToMany(() => Author, (author) => author.posts, { onDelete: "CASCADE" })
   authors: Author[];
 }

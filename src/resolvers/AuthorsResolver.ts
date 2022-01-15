@@ -1,4 +1,5 @@
-import { Get, JsonController, Param } from "routing-controllers";
+import { Authorized, Get, JsonController, Param } from "routing-controllers";
+import { Ctx } from "../decorators/Ctx";
 import { Arg, Int, Query, Resolver } from "type-graphql";
 import { Service } from "typedi";
 import { Repository } from "typeorm";
