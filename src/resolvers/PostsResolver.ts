@@ -93,7 +93,31 @@ export class PostsResolver {
   @GraphAuthorized()
   @Mutation(() => Boolean)
   @Post("/delete")
-  async deletePost(@BodyParam("id") @Arg("id", () => Int) id: number) {
+  async deletePost(
+    @BodyParam("id") @Arg("id", () => Int) id: number,
+    @CurrentUser() @GraphCurrentUser() username: string
+  ) {
+    const post = await this.postsRepository.findOne(id, {
+      relations: ["authors"],
+    });
+    if (!post) {
+      return false;
+    }
+
+    const user = await this.userRepository.findOne(
+      { username: username },
+      { relations: ["author"] }
+    );
+
+    if (!user) {
+      return false;
+    }
+
+    const authorIds = post.authors.map((author) => author.id);
+    if (!authorIds.includes(user.author.id)) {
+      return false;
+    }
+
     await this.postsRepository.delete({ id });
     return true;
   }
